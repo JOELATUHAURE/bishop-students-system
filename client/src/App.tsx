@@ -2,6 +2,7 @@ import { Suspense, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+import { ErrorBoundary } from 'react-error-boundary';  // Correct import for ErrorBoundary
 
 // Layouts
 import AuthLayout from './layouts/AuthLayout';
@@ -58,42 +59,44 @@ function App() {
       <AuthProvider>
         <BrowserRouter>
           <Suspense fallback={<LoadingScreen />}>
-            <Routes>
-              {/* Auth Routes */}
-              <Route element={<AuthLayout />}>
-                <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
-                <Route path="/forgot-password" element={<ForgotPassword />} />
-                <Route path="/reset-password" element={<ResetPassword />} />
-              </Route>
-
-              {/* Applicant Routes */}
-              <Route element={<PrivateRoute allowedRoles={['applicant']} />}>
-                <Route element={<DashboardLayout />}>
-                  <Route path="/dashboard" element={<Dashboard />} />
-                  <Route path="/applications/new" element={<NewApplication />} />
-                  <Route path="/applications/:id" element={<ApplicationDetails />} />
-                  <Route path="/applications/:id/form" element={<ApplicationForm />} />
-                  <Route path="/profile" element={<Profile />} />
+            <ErrorBoundary FallbackComponent={<LoadingScreen />}> {/* ErrorBoundary Wrapper */}
+              <Routes>
+                {/* Auth Routes */}
+                <Route element={<AuthLayout />}>
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/register" element={<Register />} />
+                  <Route path="/forgot-password" element={<ForgotPassword />} />
+                  <Route path="/reset-password" element={<ResetPassword />} />
                 </Route>
-              </Route>
 
-              {/* Admin Routes */}
-              <Route element={<AdminRoute allowedRoles={['admin', 'reviewer']} />}>
-                <Route element={<AdminLayout />}>
-                  <Route path="/admin/dashboard" element={<AdminDashboard />} />
-                  <Route path="/admin/applications" element={<ApplicationsList />} />
-                  <Route path="/admin/applications/:id" element={<AdminApplicationDetails />} />
-                  <Route path="/admin/audit-logs" element={<AuditLogs />} />
-                  <Route path="/admin/reports" element={<Reports />} />
-                  <Route path="/admin/settings" element={<Settings />} />
+                {/* Applicant Routes */}
+                <Route element={<PrivateRoute allowedRoles={['applicant']} />}>
+                  <Route element={<DashboardLayout />}>
+                    <Route path="/dashboard" element={<Dashboard />} />
+                    <Route path="/applications/new" element={<NewApplication />} />
+                    <Route path="/applications/:id" element={<ApplicationDetails />} />
+                    <Route path="/applications/:id/form" element={<ApplicationForm />} />
+                    <Route path="/profile" element={<Profile />} />
+                  </Route>
                 </Route>
-              </Route>
 
-              {/* Redirect root to dashboard or login */}
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
-              <Route path="*" element={<Navigate to="/dashboard" replace />} />
-            </Routes>
+                {/* Admin Routes */}
+                <Route element={<AdminRoute allowedRoles={['admin', 'reviewer']} />}>
+                  <Route element={<AdminLayout />}>
+                    <Route path="/admin/dashboard" element={<AdminDashboard />} />
+                    <Route path="/admin/applications" element={<ApplicationsList />} />
+                    <Route path="/admin/applications/:id" element={<AdminApplicationDetails />} />
+                    <Route path="/admin/audit-logs" element={<AuditLogs />} />
+                    <Route path="/admin/reports" element={<Reports />} />
+                    <Route path="/admin/settings" element={<Settings />} />
+                  </Route>
+                </Route>
+
+                {/* Redirect root to dashboard or login */}
+                <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                <Route path="*" element={<Navigate to="/dashboard" replace />} />
+              </Routes>
+            </ErrorBoundary>
           </Suspense>
         </BrowserRouter>
         <Toaster />
