@@ -255,4 +255,20 @@ const ApplicationDetails = () => {
           
           {(application.status === 'inReview' || 
             application.status === 'approved' || 
-            application.status
+            application.status === 'rejected') && (
+            <Card className="mt-6">
+              <CardHeader>
+                <CardTitle>{t('application.adminComments')}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ApplicationComments applicationId={id as string} />
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+};
+
+export default ApplicationDetails;
