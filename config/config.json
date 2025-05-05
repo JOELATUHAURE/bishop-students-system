@@ -1,7 +1,7 @@
 {
     "development": {
       "username": "postgres",
-      "password": "123456",
+      "password": "Kb3dGJxz3VybmRfY",
       "database": "postgres",
       "host": "aws-0-us-east-1.pooler.supabase.com",
       "port": "6543",
@@ -11,7 +11,7 @@
     },
     "test": {
       "username": "postgres",
-      "password": "123456",
+      "password": "Kb3dGJxz3VybmRfY",
       "database": "postgres",
       "host": "aws-0-us-east-1.pooler.supabase.com",
       "port": "6543",
@@ -21,7 +21,7 @@
     },
     "production": {
       "username": "postgres",
-      "password": "123456",
+      "password": "Kb3dGJxz3VybmRfY",
       "database": "postgres",
       "host": "aws-0-us-east-1.pooler.supabase.com",
       "port": "6543",
