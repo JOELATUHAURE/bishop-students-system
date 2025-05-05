@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { getApplicationStats, getRecentApplications } from '../../services/api';
-import { formatDate } from '../../utils/formatters';
+import { formatDate, formatCurrency } from '../../utils/formatters';
 
 // Components
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/Card';
@@ -70,14 +70,14 @@ const AdminDashboard = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard 
           title={t('adminDashboard.totalApplications')}
-          value={metrics.total}
+          value={formatCurrency(metrics.total)}
           description={t('adminDashboard.allTime')}
           loading={isLoadingStats}
         />
         
         <StatCard 
           title={t('adminDashboard.pendingReview')}
-          value={metrics.pending}
+          value={formatCurrency(metrics.pending)}
           description={t('adminDashboard.needsAttention')}
           loading={isLoadingStats}
           highlight
@@ -85,14 +85,14 @@ const AdminDashboard = () => {
         
         <StatCard 
           title={t('adminDashboard.approved')}
-          value={metrics.approved}
+          value={formatCurrency(metrics.approved)}
           description={t('adminDashboard.approvedDesc')}
           loading={isLoadingStats}
         />
         
         <StatCard 
           title={t('adminDashboard.refugeeApplicants')}
-          value={metrics.refugeeApplications}
+          value={formatCurrency(metrics.refugeeApplications)}
           description={t('adminDashboard.refugeeDesc')}
           loading={isLoadingStats}
         />
@@ -223,7 +223,7 @@ const StatCard = ({
   highlight = false
 }: { 
   title: string; 
-  value: number; 
+  value: string; 
   description: string; 
   loading: boolean;
   highlight?: boolean;
