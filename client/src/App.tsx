@@ -2,7 +2,7 @@ import { Suspense, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { ErrorBoundary } from 'react-error-boundary';
+import { ErrorBoundary } from 'react-error-boundary';  // Correct import for ErrorBoundary
 
 // Layouts
 import AuthLayout from './layouts/AuthLayout';
@@ -48,6 +48,7 @@ const queryClient = new QueryClient({
 function App() {
   const { i18n } = useTranslation();
 
+  // Set document direction based on language
   useEffect(() => {
     document.documentElement.dir = i18n.dir();
     document.documentElement.lang = i18n.language;
@@ -58,7 +59,7 @@ function App() {
       <AuthProvider>
         <BrowserRouter>
           <Suspense fallback={<LoadingScreen />}>
-            <ErrorBoundary FallbackComponent={LoadingScreen}>
+            <ErrorBoundary FallbackComponent={<LoadingScreen />}> {/* ErrorBoundary Wrapper */}
               <Routes>
                 {/* Auth Routes */}
                 <Route element={<AuthLayout />}>
@@ -91,9 +92,9 @@ function App() {
                   </Route>
                 </Route>
 
-                {/* Redirects */}
-                <Route path="/register" element={<Navigate to="/register" replace />} />
-               <Route path="/register" element={<Navigate to="/register" replace />} />
+                {/* Redirect root to dashboard or login */}
+                <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                <Route path="*" element={<Navigate to="/dashboard" replace />} />
               </Routes>
             </ErrorBoundary>
           </Suspense>
