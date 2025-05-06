@@ -82,8 +82,8 @@ export default defineConfig({
         ],
       },
       strategies: 'injectManifest',
-      srcDir: 'src',
-      filename: 'sw.js',
+      srcDir: 'client/src', // Update this to point to the correct source folder
+      filename: 'sw.js',     // Keep the service worker filename
       injectRegister: 'auto',
       devOptions: {
         enabled: true,
