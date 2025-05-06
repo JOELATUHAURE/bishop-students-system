@@ -1,6 +1,7 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 
+// Import translations
 const resources = {
   en: {
     translation: {
@@ -32,8 +33,6 @@ const resources = {
         status: 'Status',
         actions: 'Actions',
         view: 'View',
-        loading: 'Loading...', // ✅ This line fixes your issue
-        error: 'Something went wrong!',
       },
       settings: {
         title: 'Settings',
@@ -45,13 +44,14 @@ const resources = {
   },
 };
 
+// Initialize i18next
 i18n
   .use(initReactI18next)
   .init({
     resources,
     lng: 'en',
     interpolation: {
-      escapeValue: false,
+      escapeValue: false, // React already escapes by default
     },
     fallbackLng: 'en',
   });
