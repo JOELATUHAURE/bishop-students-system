@@ -32,6 +32,7 @@ const resources = {
         status: 'Status',
         actions: 'Actions',
         view: 'View',
+        loading: 'Loading...', // ✅ Added this line
       },
       settings: {
         title: 'Settings',
