@@ -7,3 +7,7 @@
   from = "/*"
   to = "/index.html"
   status = 200
+
+[context.production.environment]
+  VITE_SUPABASE_URL = "https://aws-0-us-east-1.pooler.supabase.com"
+  VITE_SUPABASE_ANON_KEY = "Kb3dGJxz3VybmRfY"
