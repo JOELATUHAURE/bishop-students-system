@@ -12,7 +12,6 @@
     "install-server": "npm install",
     "install-all": "npm run install-server && npm run install-client",
     "build": "npm run install-all && cd client && npm run build"
-
   },
   "keywords": [
     "student",
@@ -39,6 +38,7 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.5",
     "concurrently": "^8.2.2",
-    "nodemon": "^3.0.2"
+    "nodemon": "^3.0.2",
+    "vite": "^6.3.5"
   }
 }
