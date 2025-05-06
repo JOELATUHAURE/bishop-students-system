@@ -32,7 +32,8 @@ const resources = {
         status: 'Status',
         actions: 'Actions',
         view: 'View',
-        loading: 'Loading...', // ✅ Added this line
+        loading: 'Loading...', // ✅ This line fixes your issue
+        error: 'Something went wrong!',
       },
       settings: {
         title: 'Settings',
