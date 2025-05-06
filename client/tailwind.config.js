@@ -1,4 +1,3 @@
-// tailwind.config.ts
 /** @type {import('tailwindcss').Config} */
 export default {
   content: [
@@ -28,7 +27,7 @@ export default {
         "success-foreground": "hsl(var(--success-foreground))",
         warning: "hsl(var(--warning))",
         "warning-foreground": "hsl(var(--warning-foreground))",
-        border: "hsl(var(--border))",
+        border: "#E5E7EB", // Custom border color (or define the CSS variable --border in your global styles)
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
       },
