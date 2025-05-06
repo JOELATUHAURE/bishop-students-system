@@ -1,6 +1,5 @@
 [build]
-  base = "client"
-  publish = "dist"
+  publish = "client/dist"  # Path to the 'dist' folder in your 'client' directory
   command = "npm run build"
 
 [functions]
