@@ -97,6 +97,6 @@ export default defineConfig({
     },
   },
   build: {
-    outDir: 'build',
+    outDir: 'client/dist', // Change this to match the desired output directory
   },
 });
