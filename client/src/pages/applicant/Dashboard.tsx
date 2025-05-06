@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { FileText, Plus } from 'lucide-react';
 import api from '../../services/api';
-import LoadingScreen from '../../components/LoadingScreen'; // ✅ Adjust the path based on your structure
+import LoadingScreen from "../../components/ui/LoadingScreen";
 
 const Dashboard = () => {
   const { t } = useTranslation();
