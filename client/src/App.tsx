@@ -92,8 +92,8 @@ function App() {
                 </Route>
 
                 {/* Redirects */}
-                <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                <Route path="*" element={<Navigate to="/dashboard" replace />} />
+                <Route path="/register" element={<Navigate to="/register" replace />} />
+               <Route path="/register" element={<Navigate to="/register" replace />} />
               </Routes>
             </ErrorBoundary>
           </Suspense>
