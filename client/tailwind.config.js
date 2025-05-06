@@ -5,21 +5,7 @@ export default {
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
   safelist: [
-    'text-primary',
-    'text-secondary',
-    'text-success',
-    'text-warning',
-    'text-destructive',
-    'bg-primary',
-    'bg-secondary',
-    'bg-success',
-    'bg-warning',
-    'bg-destructive',
-    'border-primary',
-    'border-secondary',
-    'border-success',
-    'border-warning',
-    'border-destructive',
+    'bg-background', // Prevent purging of bg-background
   ],
   theme: {
     extend: {
@@ -44,7 +30,7 @@ export default {
         "success-foreground": "hsl(var(--success-foreground))",
         warning: "hsl(var(--warning))",
         "warning-foreground": "hsl(var(--warning-foreground))",
-        border: "#E5E7EB",
+        border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
       },
