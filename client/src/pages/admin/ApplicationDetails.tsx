@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { CheckCircle, XCircle, Clock, FileText, User, School } from 'lucide-react';
 import api from '../../services/api';
+import LoadingScreen from "../../components/ui/LoadingScreen";
 
 const AdminApplicationDetails = () => {
   const { id } = useParams();
@@ -15,14 +16,15 @@ const AdminApplicationDetails = () => {
     rejectionReason: '',
   });
 
-  const { data: application, isLoading } = useQuery({
+  // Query to fetch application data
+  const { data: application, isLoading, isError, error } = useQuery({
     queryKey: ['application', id],
     queryFn: () => api.admin.getApplication(id!),
   });
 
+  // Mutation for reviewing the application
   const reviewMutation = useMutation({
-    mutationFn: (data: typeof reviewData) =>
-      api.admin.reviewApplication(id!, data),
+    mutationFn: (data: typeof reviewData) => api.admin.reviewApplication(id!, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['application', id] });
     },
@@ -36,8 +38,23 @@ const AdminApplicationDetails = () => {
     }
   };
 
+  // ✅ Use your animated LoadingScreen component for loading state
   if (isLoading) {
-    return <div>Loading...</div>;
+    return <LoadingScreen />;
+  }
+
+  // Handle errors
+  if (isError) {
+    return (
+      <div className="text-center py-12">
+        <h3 className="mt-2 text-sm font-medium text-gray-900">
+          {t('common.error', 'Something went wrong!')}
+        </h3>
+        <p className="mt-1 text-sm text-gray-500">
+          {error instanceof Error ? error.message : 'Error occurred while fetching data.'}
+        </p>
+      </div>
+    );
   }
 
   return (
@@ -47,12 +64,14 @@ const AdminApplicationDetails = () => {
           {t('admin.applicationDetails')} - {application?.applicationNumber}
         </h2>
         <div className="flex items-center space-x-4">
-          <span className={`px-3 py-1 rounded-full text-sm font-medium
-            ${application?.status === 'approved' ? 'bg-green-100 text-green-800' :
-              application?.status === 'rejected' ? 'bg-red-100 text-red-800' :
-              application?.status === 'waitlisted' ? 'bg-yellow-100 text-yellow-800' :
-              'bg-blue-100 text-blue-800'
-            }`}>
+          <span
+            className={`px-3 py-1 rounded-full text-sm font-medium
+              ${application?.status === 'approved' ? 'bg-green-100 text-green-800' :
+                application?.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                application?.status === 'waitlisted' ? 'bg-yellow-100 text-yellow-800' :
+                'bg-blue-100 text-blue-800'
+              }`}
+          >
             {t(`dashboard.${application?.status}`)}
           </span>
         </div>
@@ -179,10 +198,8 @@ const AdminApplicationDetails = () => {
                 <option value="under_review">{t('dashboard.under_review')}</option>
                 <option value="approved">{t('dashboard.approved')}</option>
                 <option value="rejected">{t('dashboard.rejected')}</option>
-                <option value="waitlisted">{t('dashboard.waitlisted')}</option>
               </select>
             </div>
-
             <div>
               <label className="block text-sm font-medium text-gray-600">
                 {t('admin.comments')}
@@ -191,10 +208,9 @@ const AdminApplicationDetails = () => {
                 value={reviewData.comments}
                 onChange={(e) => setReviewData({ ...reviewData, comments: e.target.value })}
                 className="form-textarea mt-1"
-                rows={3}
+                placeholder={t('admin.commentsPlaceholder')}
               />
             </div>
-
             {reviewData.status === 'rejected' && (
               <div>
                 <label className="block text-sm font-medium text-gray-600">
@@ -202,22 +218,18 @@ const AdminApplicationDetails = () => {
                 </label>
                 <textarea
                   value={reviewData.rejectionReason}
-                  onChange={(e) =>
-                    setReviewData({ ...reviewData, rejectionReason: e.target.value })
-                  }
+                  onChange={(e) => setReviewData({ ...reviewData, rejectionReason: e.target.value })}
                   className="form-textarea mt-1"
-                  rows={3}
+                  placeholder={t('admin.rejectionReasonPlaceholder')}
                 />
               </div>
             )}
-
-            <div className="flex justify-end">
+            <div className="mt-6 flex justify-end">
               <button
                 onClick={handleReview}
-                disabled={!reviewData.status || reviewMutation.isPending}
-                className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 disabled:opacity-50"
+                className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-md"
               >
-                {reviewMutation.isPending ? t('common.loading') : t('common.submit')}
+                {t('common.submitReview')}
               </button>
             </div>
           </div>
