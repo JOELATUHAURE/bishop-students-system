@@ -21,7 +21,7 @@ export default {
         // Light and dark theme semantic tokens
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
-        border: '#E5E7EB', // Custom border color directly defined (fixes border-border issue)
+        border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',
       },
