@@ -1,91 +1,46 @@
-module.exports = (sequelize, DataTypes) => {
-  const Application = sequelize.define('Application', {
+module.exports = (sequelize, Sequelize) => {
+  const Application = sequelize.define('application', {
     id: {
-      type: DataTypes.UUID,
-      defaultValue: DataTypes.UUIDV4,
-      primaryKey: true,
-    },
-    applicationNumber: {
-      type: DataTypes.STRING,
-      unique: true,
+      type: Sequelize.UUID,
+      defaultValue: Sequelize.UUIDV4,
+      primaryKey: true
     },
     userId: {
-      type: DataTypes.UUID,
+      type: Sequelize.UUID,
       allowNull: false,
       references: {
-        model: 'Users',
-        key: 'id',
-      },
+        model: 'users',
+        key: 'id'
+      }
     },
     status: {
-      type: DataTypes.ENUM('draft', 'submitted', 'under_review', 'approved', 'rejected', 'waitlisted'),
-      defaultValue: 'draft',
+      type: Sequelize.ENUM('pending', 'approved', 'rejected'),
+      defaultValue: 'pending'
     },
-    currentStep: {
-      type: DataTypes.INTEGER,
-      defaultValue: 1,
+    type: {
+      type: Sequelize.ENUM('refugee', 'asylum_seeker'),
+      allowNull: false
     },
-    completedSteps: {
-      type: DataTypes.ARRAY(DataTypes.INTEGER),
-      defaultValue: [],
+    reason: {
+      type: Sequelize.TEXT,
+      allowNull: false
     },
-    program: {
-      type: DataTypes.STRING,
-    },
-    department: {
-      type: DataTypes.STRING,
-    },
-    academicYear: {
-      type: DataTypes.STRING,
-    },
-    semester: {
-      type: DataTypes.STRING,
-    },
-    disabilityStatus: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: false,
-    },
-    disabilityType: {
-      type: DataTypes.STRING,
-    },
-    emergencyContactName: {
-      type: DataTypes.STRING,
-    },
-    emergencyContactPhone: {
-      type: DataTypes.STRING,
-    },
-    emergencyContactRelationship: {
-      type: DataTypes.STRING,
-    },
-    submittedAt: {
-      type: DataTypes.DATE,
-    },
-    reviewedAt: {
-      type: DataTypes.DATE,
+    additionalInfo: {
+      type: Sequelize.TEXT
     },
     reviewedBy: {
-      type: DataTypes.UUID,
+      type: Sequelize.UUID,
       references: {
-        model: 'Users',
-        key: 'id',
-      },
+        model: 'users',
+        key: 'id'
+      }
     },
-    comments: {
-      type: DataTypes.TEXT,
+    reviewedAt: {
+      type: Sequelize.DATE
     },
-    rejectionReason: {
-      type: DataTypes.TEXT,
-    },
-  }, {
-    timestamps: true,
-    hooks: {
-      beforeCreate: (application) => {
-        // Generate application number based on current time and random value
-        const timestamp = new Date().getTime().toString().slice(-6);
-        const random = Math.floor(Math.random() * 9000) + 1000;
-        application.applicationNumber = `BSU-${timestamp}${random}`;
-      },
-    },
+    reviewNotes: {
+      type: Sequelize.TEXT
+    }
   });
 
   return Application;
