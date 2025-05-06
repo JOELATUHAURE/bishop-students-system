@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: 'class', // ✅ Enables dark mode using the 'class' strategy
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
@@ -17,7 +18,17 @@ export default {
           800: '#19146D',
           900: '#0F0D3B',
         },
+        // Light and dark theme semantic tokens
+        background: 'hsl(var(--background))',
+        foreground: 'hsl(var(--foreground))',
+        border: 'hsl(var(--border))',
+        input: 'hsl(var(--input))',
+        ring: 'hsl(var(--ring))',
       },
+      borderColor: theme => ({
+        DEFAULT: theme('colors.border', 'currentColor'),
+        ...theme('colors'),
+      }),
     },
   },
   plugins: [],

@@ -1,3 +1,4 @@
+// tailwind.config.ts
 /** @type {import('tailwindcss').Config} */
 export default {
   content: [
@@ -31,6 +32,10 @@ export default {
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
       },
+      borderColor: theme => ({
+        DEFAULT: theme('colors.border', 'currentColor'),
+        ...theme('colors'),
+      }),
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
@@ -68,4 +73,4 @@ export default {
     },
   },
   plugins: [],
-}
+};

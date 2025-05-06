@@ -1,3 +1,4 @@
+// src/services/api.ts
 import { supabase } from '../lib/supabase';
 
 const api = {
@@ -6,9 +7,7 @@ const api = {
       const { data: user, error } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
-        options: {
-          data: { name: data.name }
-        }
+        options: { data: { name: data.name } }
       });
       if (error) throw error;
       return user;

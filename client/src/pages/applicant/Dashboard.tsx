@@ -1,19 +1,17 @@
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { FileText, Plus, Bell } from 'lucide-react';
-import api from '../services/api';
+import { FileText, Plus } from 'lucide-react';
+import api from '../../services/api'; // ✅ FIXED
 
 const Dashboard = () => {
   const { t } = useTranslation();
 
-  // Fetch applications using useQuery from React Query
   const { data: applications = [], isLoading } = useQuery({
     queryKey: ['applications'],
     queryFn: () => api.applications.list(),
   });
 
-  // Function to get status color dynamically based on application status
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'approved':
