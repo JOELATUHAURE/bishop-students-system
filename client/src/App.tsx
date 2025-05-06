@@ -59,7 +59,7 @@ function App() {
       <AuthProvider>
         <BrowserRouter>
           <Suspense fallback={<LoadingScreen />}>
-            <ErrorBoundary FallbackComponent={<LoadingScreen />}> {/* ErrorBoundary Wrapper */}
+            <ErrorBoundary FallbackComponent={LoadingScreen}> {/* ErrorBoundary Wrapper */}
               <Routes>
                 {/* Auth Routes */}
                 <Route element={<AuthLayout />}>
