@@ -1,272 +1,204 @@
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
-import { getApplication, getApplicationDocuments } from '../../services/api';
-import { formatDate } from '../../utils/formatters';
-
-// Components
-import { Badge } from '../../components/ui/Badge';
-import Button from '../../components/ui/Button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/Tabs';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/Card';
-import { Skeleton } from '../../components/ui/Skeleton';
-import DocumentList from '../../components/application/DocumentList';
-import ApplicationTimeline from '../../components/application/ApplicationTimeline';
-import ApplicationComments from '../../components/application/ApplicationComments';
-
-// Status badge variants
-const statusVariants = {
-  draft: 'default',
-  submitted: 'secondary',
-  inReview: 'warning',
-  approved: 'success',
-  rejected: 'destructive',
-};
+import {
+  FileText,
+  User,
+  School,
+  Download,
+  Clock,
+  CheckCircle,
+  XCircle,
+} from 'lucide-react';
+import api from '../../services/api';
 
 const ApplicationDetails = () => {
-  const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
+  const { id } = useParams();
   const { t } = useTranslation();
 
-  const { data: application, isLoading: isLoadingApp } = useQuery({
+  const { data: application, isLoading } = useQuery({
     queryKey: ['application', id],
-    queryFn: () => getApplication(id as string),
-    enabled: !!id,
+    queryFn: () => api.applications.get(id!),
   });
 
-  const { data: documents, isLoading: isLoadingDocs } = useQuery({
-    queryKey: ['application-documents', id],
-    queryFn: () => getApplicationDocuments(id as string),
-    enabled: !!id,
-  });
-
-  const handleEdit = () => {
-    navigate(`/applications/${id}/form`);
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'approved':
+        return 'bg-green-100 text-green-800';
+      case 'rejected':
+        return 'bg-red-100 text-red-800';
+      case 'waitlisted':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'under_review':
+        return 'bg-blue-100 text-blue-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
   };
 
-  if (isLoadingApp) {
-    return (
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <Skeleton className="h-8 w-60" />
-          <Skeleton className="h-10 w-24" />
-        </div>
-        <Skeleton className="h-40 w-full" />
-        <Skeleton className="h-60 w-full" />
-      </div>
-    );
+  if (isLoading) {
+    return <div>Loading...</div>;
   }
-
-  if (!application) {
-    return (
-      <div className="bg-red-50 border border-red-200 rounded-md p-4 text-red-800">
-        <p>{t('error.applicationNotFound')}</p>
-      </div>
-    );
-  }
-
-  const canEdit = application.status === 'draft' || application.status === 'rejected';
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row justify-between md:items-center">
-        <div>
-          <h1 className="text-2xl font-bold">{t('application.details')}</h1>
-          <div className="flex items-center mt-2">
-            <Badge variant={statusVariants[application.status as keyof typeof statusVariants] as any}>
-              {t(`application.status.${application.status}`)}
-            </Badge>
-            <p className="text-sm text-gray-500 ml-4">
-              {application.submittedAt 
-                ? `${t('application.submitted')}: ${formatDate(application.submittedAt)}`
-                : t('application.notSubmitted')}
-            </p>
-          </div>
-        </div>
-        
-        {canEdit && (
-          <Button 
-            onClick={handleEdit} 
-            className="mt-4 md:mt-0"
-          >
-            {t('common.edit')}
-          </Button>
-        )}
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-semibold text-gray-900">
+          {t('application.applicationDetails')}
+        </h2>
+        <span
+          className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
+            application?.status
+          )}`}
+        >
+          {t(`dashboard.${application?.status}`)}
+        </span>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{application.program}</CardTitle>
-          <CardDescription>
-            {t('application.programType')}: {t(`application.${application.programType}`)}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <dl className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Application Information */}
+        <div className="bg-white shadow-md rounded-lg p-6">
+          <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+            <FileText className="h-5 w-5 mr-2" />
+            {t('application.applicationInfo')}
+          </h3>
+          <div className="space-y-4">
             <div>
-              <dt className="text-sm font-medium text-gray-500">{t('application.applicationId')}</dt>
-              <dd className="mt-1 text-sm">{application.id}</dd>
+              <label className="block text-sm font-medium text-gray-600">
+                {t('application.applicationNumber')}
+              </label>
+              <p className="mt-1 text-sm text-gray-900">
+                {application?.applicationNumber}
+              </p>
             </div>
             <div>
-              <dt className="text-sm font-medium text-gray-500">{t('application.appliedOn')}</dt>
-              <dd className="mt-1 text-sm">
-                {application.createdAt ? formatDate(application.createdAt) : '-'}
-              </dd>
+              <label className="block text-sm font-medium text-gray-600">
+                {t('application.program')}
+              </label>
+              <p className="mt-1 text-sm text-gray-900">{application?.program}</p>
             </div>
-            {application.updatedAt && (
+            <div>
+              <label className="block text-sm font-medium text-gray-600">
+                {t('application.department')}
+              </label>
+              <p className="mt-1 text-sm text-gray-900">
+                {application?.department}
+              </p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-600">
+                {t('application.academicYear')}
+              </label>
+              <p className="mt-1 text-sm text-gray-900">
+                {application?.academicYear}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Status Information */}
+        <div className="bg-white shadow-md rounded-lg p-6">
+          <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+            <Clock className="h-5 w-5 mr-2" />
+            {t('application.currentStatus')}
+          </h3>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-600">
+                {t('application.submissionDate')}
+              </label>
+              <p className="mt-1 text-sm text-gray-900">
+                {application?.submittedAt
+                  ? new Date(application.submittedAt).toLocaleDateString()
+                  : '-'}
+              </p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-600">
+                {t('application.reviewDate')}
+              </label>
+              <p className="mt-1 text-sm text-gray-900">
+                {application?.reviewedAt
+                  ? new Date(application.reviewedAt).toLocaleDateString()
+                  : '-'}
+              </p>
+            </div>
+            {application?.status === 'rejected' && (
               <div>
-                <dt className="text-sm font-medium text-gray-500">{t('application.lastUpdated')}</dt>
-                <dd className="mt-1 text-sm">{formatDate(application.updatedAt)}</dd>
+                <label className="block text-sm font-medium text-gray-600">
+                  {t('application.rejectionReason')}
+                </label>
+                <p className="mt-1 text-sm text-gray-900">
+                  {application.rejectionReason}
+                </p>
               </div>
             )}
-            {application.reviewedAt && (
-              <div>
-                <dt className="text-sm font-medium text-gray-500">{t('application.reviewedOn')}</dt>
-                <dd className="mt-1 text-sm">{formatDate(application.reviewedAt)}</dd>
+          </div>
+        </div>
+
+        {/* Education Records */}
+        <div className="bg-white shadow-md rounded-lg p-6">
+          <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+            <School className="h-5 w-5 mr-2" />
+            {t('application.educationBackground')}
+          </h3>
+          <div className="space-y-4">
+            {application?.educationRecords?.map((record: any) => (
+              <div key={record.id} className="border-b pb-4">
+                <h4 className="font-medium text-gray-900">
+                  {record.institutionName}
+                </h4>
+                <p className="text-sm text-gray-600">{record.degree}</p>
+                <p className="text-sm text-gray-600">{record.fieldOfStudy}</p>
+                <p className="text-sm text-gray-500">
+                  {new Date(record.startDate).getFullYear()} -{' '}
+                  {record.isCurrentlyStudying
+                    ? t('application.currentlyStudying')
+                    : new Date(record.endDate).getFullYear()}
+                </p>
               </div>
-            )}
-          </dl>
-        </CardContent>
-      </Card>
+            ))}
+          </div>
+        </div>
 
-      <Tabs defaultValue="details">
-        <TabsList className="grid grid-cols-3 mb-6">
-          <TabsTrigger value="details">{t('application.personalDetails')}</TabsTrigger>
-          <TabsTrigger value="documents">{t('application.documents')}</TabsTrigger>
-          <TabsTrigger value="timeline">{t('application.timeline')}</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="details" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('application.personalInformation')}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <dl className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Documents */}
+        <div className="bg-white shadow-md rounded-lg p-6">
+          <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+            <FileText className="h-5 w-5 mr-2" />
+            {t('application.documents')}
+          </h3>
+          <div className="space-y-4">
+            {application?.documents?.map((document: any) => (
+              <div
+                key={document.id}
+                className="flex items-center justify-between border-b pb-4"
+              >
                 <div>
-                  <dt className="text-sm font-medium text-gray-500">{t('application.name')}</dt>
-                  <dd className="mt-1 text-sm">
-                    {application.personalInfo?.firstName} {application.personalInfo?.lastName}
-                  </dd>
+                  <h4 className="font-medium text-gray-900">{document.name}</h4>
+                  <p className="text-sm text-gray-600">
+                    {t(`application.${document.type}`)}
+                  </p>
                 </div>
-                <div>
-                  <dt className="text-sm font-medium text-gray-500">{t('application.email')}</dt>
-                  <dd className="mt-1 text-sm">{application.personalInfo?.email}</dd>
+                <div className="flex items-center space-x-4">
+                  {document.verified ? (
+                    <CheckCircle className="h-5 w-5 text-green-500" />
+                  ) : (
+                    <Clock className="h-5 w-5 text-yellow-500" />
+                  )}
+                  <button
+                    onClick={() => {
+                      // Handle document download
+                    }}
+                    className="text-primary hover:text-primary/80"
+                  >
+                    <Download className="h-5 w-5" />
+                  </button>
                 </div>
-                <div>
-                  <dt className="text-sm font-medium text-gray-500">{t('application.phone')}</dt>
-                  <dd className="mt-1 text-sm">{application.personalInfo?.phone || '-'}</dd>
-                </div>
-                <div>
-                  <dt className="text-sm font-medium text-gray-500">{t('application.dateOfBirth')}</dt>
-                  <dd className="mt-1 text-sm">
-                    {application.personalInfo?.dateOfBirth 
-                      ? formatDate(application.personalInfo.dateOfBirth)
-                      : '-'}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-sm font-medium text-gray-500">{t('application.nationality')}</dt>
-                  <dd className="mt-1 text-sm">{application.personalInfo?.nationality || '-'}</dd>
-                </div>
-                <div>
-                  <dt className="text-sm font-medium text-gray-500">{t('application.refugee')}</dt>
-                  <dd className="mt-1 text-sm">
-                    {application.personalInfo?.refugee 
-                      ? t('common.yes') 
-                      : t('common.no')}
-                  </dd>
-                </div>
-                {application.personalInfo?.refugee && application.personalInfo?.refugeeId && (
-                  <div>
-                    <dt className="text-sm font-medium text-gray-500">{t('application.refugeeId')}</dt>
-                    <dd className="mt-1 text-sm">{application.personalInfo.refugeeId}</dd>
-                  </div>
-                )}
-              </dl>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('application.educationBackground')}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <dl className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <dt className="text-sm font-medium text-gray-500">{t('application.highSchool')}</dt>
-                  <dd className="mt-1 text-sm">{application.education?.highSchool || '-'}</dd>
-                </div>
-                <div>
-                  <dt className="text-sm font-medium text-gray-500">{t('application.graduationYear')}</dt>
-                  <dd className="mt-1 text-sm">{application.education?.graduationYear || '-'}</dd>
-                </div>
-                <div>
-                  <dt className="text-sm font-medium text-gray-500">{t('application.qualification')}</dt>
-                  <dd className="mt-1 text-sm">{application.education?.qualification || '-'}</dd>
-                </div>
-              </dl>
-              
-              {application.education?.otherQualifications && 
-               application.education.otherQualifications.length > 0 && (
-                <div className="mt-4">
-                  <h4 className="text-sm font-medium text-gray-500 mb-2">
-                    {t('application.otherQualifications')}
-                  </h4>
-                  <ul className="list-disc pl-5 space-y-1">
-                    {application.education.otherQualifications.map((qual, index) => (
-                      <li key={index} className="text-sm">{qual}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="documents">
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('application.uploadedDocuments')}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {isLoadingDocs ? (
-                <div className="space-y-2">
-                  <Skeleton className="h-12 w-full" />
-                  <Skeleton className="h-12 w-full" />
-                  <Skeleton className="h-12 w-full" />
-                </div>
-              ) : (
-                <DocumentList documents={documents || []} />
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="timeline">
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('application.applicationTimeline')}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ApplicationTimeline application={application} />
-            </CardContent>
-          </Card>
-          
-          {(application.status === 'inReview' || 
-            application.status === 'approved' || 
-            application.status === 'rejected') && (
-            <Card className="mt-6">
-              <CardHeader>
-                <CardTitle>{t('application.adminComments')}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ApplicationComments applicationId={id as string} />
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
-      </Tabs>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

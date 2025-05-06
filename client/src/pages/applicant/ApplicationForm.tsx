@@ -1,250 +1,244 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useQuery, useMutation } from '@tanstack/react-query';
-import { getApplication, updateApplication, uploadDocument } from '../../services/api';
-import { useToast } from '../../hooks/useToast';
-
-// Components
-import PersonalInfoForm from '../../components/application/PersonalInfoForm';
-import EducationForm from '../../components/application/EducationForm';
-import DocumentUploadForm from '../../components/application/DocumentUploadForm';
-import ReviewSubmit from '../../components/application/ReviewSubmit';
-import StepIndicator from '../../components/application/StepIndicator';
-import Button from '../../components/ui/Button';
-import LoadingScreen from '../../components/ui/LoadingScreen';
-
-const steps = ['personal', 'education', 'documents', 'review'];
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  School,
+  FileText,
+  CheckCircle,
+  ArrowLeft,
+  ArrowRight,
+  Save,
+  Upload,
+  Loader2,
+} from 'lucide-react';
+import api from '../../services/api';
+import { useToast } from '../../components/ui/Toaster';
 
 const ApplicationForm = () => {
-  const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
+  const { id } = useParams();
   const { t } = useTranslation();
-  const { toast } = useToast();
-  
-  const [currentStep, setCurrentStep] = useState(0);
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { showToast } = useToast();
+  const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
     personalInfo: {
-      firstName: '',
-      lastName: '',
-      email: '',
-      phone: '',
-      dateOfBirth: '',
-      gender: '',
-      nationality: '',
-      address: '',
-      city: '',
-      country: '',
-      refugee: false,
-      refugeeId: '',
+      disabilityStatus: false,
+      disabilityType: '',
+      emergencyContactName: '',
+      emergencyContactPhone: '',
+      emergencyContactRelationship: '',
     },
     education: {
-      highSchool: '',
-      graduationYear: '',
-      qualification: '',
-      otherQualifications: [],
+      institutionName: '',
+      institutionType: '',
+      country: '',
+      city: '',
+      degree: '',
+      fieldOfStudy: '',
+      startDate: '',
+      endDate: '',
+      isCurrentlyStudying: false,
+      grade: '',
+      description: '',
     },
-    documents: {
-      identificationDoc: null,
-      academicTranscript: null,
-      refugeeStatusDoc: null,
-      otherDocs: [],
-    }
   });
-  
-  // Fetch application data
-  const { data: application, isLoading, error } = useQuery({
+
+  const { data: application, isLoading } = useQuery({
     queryKey: ['application', id],
-    queryFn: () => getApplication(id as string),
-    enabled: !!id,
+    queryFn: () => api.applications.get(id!),
   });
 
-  // Update application data
   const updateMutation = useMutation({
-    mutationFn: (data: any) => updateApplication(id as string, data),
+    mutationFn: (data: any) => api.applications.update(id!, data),
     onSuccess: () => {
-      toast({
-        title: t('application.saved'),
-        description: t('application.dataSaved'),
-      });
-    },
-    onError: () => {
-      toast({
-        title: t('error.title'),
-        description: t('error.savingData'),
-        variant: 'destructive',
-      });
+      queryClient.invalidateQueries({ queryKey: ['application', id] });
+      showToast(t('application.autosaveSuccess'), 'success');
     },
   });
 
-  // Upload document
-  const uploadMutation = useMutation({
-    mutationFn: ({ file, type }: { file: File, type: string }) => 
-      uploadDocument(id as string, file, type),
+  const submitMutation = useMutation({
+    mutationFn: () => api.applications.submit(id!),
     onSuccess: () => {
-      toast({
-        title: t('document.uploaded'),
-        description: t('document.uploadSuccess'),
-      });
-    },
-    onError: () => {
-      toast({
-        title: t('error.title'),
-        description: t('error.uploadingDocument'),
-        variant: 'destructive',
-      });
+      showToast(t('application.submissionSuccess'), 'success');
+      navigate('/dashboard');
     },
   });
 
-  // Load application data when available
   useEffect(() => {
     if (application) {
-      setFormData({
-        personalInfo: application.personalInfo || formData.personalInfo,
-        education: application.education || formData.education,
-        documents: application.documents || formData.documents,
-      });
+      setCurrentStep(application.currentStep);
+      // Populate form data from application
     }
   }, [application]);
 
-  // Save data when changing steps (auto-save)
-  const handleStepChange = async (stepIndex: number) => {
-    if (stepIndex > currentStep) {
-      // Save current step data before proceeding
-      await updateMutation.mutateAsync(formData);
+  const handleSave = async () => {
+    try {
+      await updateMutation.mutateAsync({
+        ...formData,
+        currentStep,
+      });
+    } catch (error) {
+      showToast(t('errors.generic'), 'error');
     }
-    setCurrentStep(stepIndex);
-  };
-
-  const handleUpdateFormData = (section: string, data: any) => {
-    setFormData(prev => ({
-      ...prev,
-      [section]: {
-        ...prev[section as keyof typeof prev],
-        ...data
-      }
-    }));
-  };
-
-  const handleDocumentUpload = async (file: File, type: string) => {
-    await uploadMutation.mutateAsync({ file, type });
   };
 
   const handleSubmit = async () => {
     try {
-      await updateMutation.mutateAsync({
-        ...formData,
-        status: 'submitted',
-        submittedAt: new Date().toISOString(),
-      });
-      toast({
-        title: t('application.submitted'),
-        description: t('application.submissionSuccess'),
-      });
-      navigate(`/applications/${id}`);
+      await submitMutation.mutateAsync();
     } catch (error) {
-      toast({
-        title: t('error.title'),
-        description: t('error.submittingApplication'),
-        variant: 'destructive',
-      });
+      showToast(t('errors.generic'), 'error');
     }
   };
 
-  if (isLoading) {
-    return <LoadingScreen />;
-  }
-
-  if (error) {
-    return (
-      <div className="bg-red-50 border border-red-200 rounded-md p-4 text-red-800">
-        <p>{t('error.loadingApplication')}</p>
-        <p className="text-sm mt-2">{(error as Error).message}</p>
-      </div>
-    );
-  }
+  const steps = [
+    {
+      number: 1,
+      title: t('application.personalInfo'),
+      icon: School,
+    },
+    {
+      number: 2,
+      title: t('application.educationBackground'),
+      icon: School,
+    },
+    {
+      number: 3,
+      title: t('application.documents'),
+      icon: FileText,
+    },
+    {
+      number: 4,
+      title: t('application.review'),
+      icon: CheckCircle,
+    },
+  ];
 
   return (
-    <div>
-      <div className="flex flex-col md:flex-row justify-between items-start mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">{t('application.form')}</h1>
-          <p className="text-gray-500">{application?.program}</p>
+    <div className="max-w-4xl mx-auto">
+      <div className="space-y-6">
+        {/* Progress Steps */}
+        <nav aria-label="Progress">
+          <ol className="flex items-center">
+            {steps.map((step, stepIdx) => (
+              <li
+                key={step.title}
+                className={`${
+                  stepIdx !== steps.length - 1 ? 'flex-1' : ''
+                } relative`}
+              >
+                <div
+                  className="group flex items-center"
+                  aria-current={currentStep === step.number ? 'step' : undefined}
+                >
+                  <span className="flex items-center px-6 py-4 text-sm font-medium">
+                    <span
+                      className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full ${
+                        currentStep > step.number
+                          ? 'bg-primary'
+                          : currentStep === step.number
+                          ? 'border-2 border-primary'
+                          : 'border-2 border-gray-300'
+                      }`}
+                    >
+                      <step.icon
+                        className={`h-6 w-6 ${
+                          currentStep > step.number
+                            ? 'text-white'
+                            : currentStep === step.number
+                            ? 'text-primary'
+                            : 'text-gray-500'
+                        }`}
+                        aria-hidden="true"
+                      />
+                    </span>
+                    <span
+                      className={`ml-4 text-sm font-medium ${
+                        currentStep === step.number
+                          ? 'text-primary'
+                          : 'text-gray-500'
+                      }`}
+                    >
+                      {step.title}
+                    </span>
+                  </span>
+                </div>
+
+                {stepIdx !== steps.length - 1 && (
+                  <div
+                    className={`absolute right-0 top-0 hidden h-full w-5 md:block ${
+                      currentStep > step.number ? 'bg-primary' : 'bg-gray-200'
+                    }`}
+                    aria-hidden="true"
+                  />
+                )}
+              </li>
+            ))}
+          </ol>
+        </nav>
+
+        {/* Form Content */}
+        <div className="bg-white shadow-md rounded-lg p-6">
+          {/* Step content here */}
         </div>
-        <div className="mt-4 md:mt-0">
-          <Button
-            variant="outline"
-            onClick={() => navigate(`/applications/${id}`)}
+
+        {/* Navigation Buttons */}
+        <div className="flex justify-between">
+          <button
+            type="button"
+            onClick={() => setCurrentStep((prev) => Math.max(1, prev - 1))}
+            disabled={currentStep === 1}
+            className="flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50"
           >
-            {t('common.cancel')}
-          </Button>
-        </div>
-      </div>
-
-      <div className="mb-8">
-        <StepIndicator 
-          steps={steps.map(step => t(`application.steps.${step}`))} 
-          currentStep={currentStep}
-          onStepClick={handleStepChange}
-        />
-      </div>
-
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        {currentStep === 0 && (
-          <PersonalInfoForm 
-            data={formData.personalInfo} 
-            onChange={(data) => handleUpdateFormData('personalInfo', data)} 
-          />
-        )}
-        
-        {currentStep === 1 && (
-          <EducationForm 
-            data={formData.education} 
-            onChange={(data) => handleUpdateFormData('education', data)} 
-          />
-        )}
-        
-        {currentStep === 2 && (
-          <DocumentUploadForm 
-            data={formData.documents} 
-            onChange={(data) => handleUpdateFormData('documents', data)}
-            onUpload={handleDocumentUpload}
-            isUploading={uploadMutation.isPending}
-          />
-        )}
-        
-        {currentStep === 3 && (
-          <ReviewSubmit 
-            formData={formData} 
-            onSubmit={handleSubmit} 
-            isSubmitting={updateMutation.isPending}
-          />
-        )}
-
-        <div className="flex justify-between mt-8">
-          <Button
-            variant="outline"
-            onClick={() => handleStepChange(currentStep - 1)}
-            disabled={currentStep === 0 || updateMutation.isPending}
-          >
+            <ArrowLeft className="w-5 h-5 mr-2" />
             {t('common.previous')}
-          </Button>
-          
-          {currentStep < steps.length - 1 ? (
-            <Button
-              onClick={() => handleStepChange(currentStep + 1)}
+          </button>
+
+          <div className="flex gap-4">
+            <button
+              type="button"
+              onClick={handleSave}
               disabled={updateMutation.isPending}
+              className="flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
             >
-              {updateMutation.isPending ? t('common.saving') : t('common.next')}
-            </Button>
-          ) : (
-            <Button
-              onClick={handleSubmit}
-              disabled={updateMutation.isPending}
-            >
-              {updateMutation.isPending ? t('common.submitting') : t('application.submit')}
-            </Button>
-          )}
+              {updateMutation.isPending ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <>
+                  <Save className="w-5 h-5 mr-2" />
+                  {t('application.saveAndExit')}
+                </>
+              )}
+            </button>
+
+            {currentStep < steps.length ? (
+              <button
+                type="button"
+                onClick={() => setCurrentStep((prev) => Math.min(steps.length, prev + 1))}
+                className="flex items-center px-4 py-2 text-sm font-medium text-white bg-primary rounded-md hover:bg-primary/90"
+              >
+                {t('common.next')}
+                <ArrowRight className="w-5 h-5 ml-2" />
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleSubmit}
+                disabled={submitMutation.isPending}
+                className="flex items-center px-4 py-2 text-sm font-medium text-white bg-primary rounded-md hover:bg-primary/90"
+              >
+                {submitMutation.isPending ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <>
+                    <Upload className="w-5 h-5 mr-2" />
+                    {t('common.submit')}
+                  </>
+                )}
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>

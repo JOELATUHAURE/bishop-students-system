@@ -1,123 +1,128 @@
-import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { getUserApplications } from '../../services/api';
-import { Application } from '../../types/application';
-
-// Components
-import ApplicationCard from '../../components/application/ApplicationCard';
-import StatusChart from '../../components/dashboard/StatusChart';
-import RecentActivity from '../../components/dashboard/RecentActivity';
-import Button from '../../components/ui/Button';
-import { Skeleton } from '../../components/ui/Skeleton';
+import { Link } from 'react-router-dom';
+import { FileText, Plus, Bell } from 'lucide-react';
+import api from '../../services/api';
 
 const Dashboard = () => {
   const { t } = useTranslation();
-  const navigate = useNavigate();
-  const [stats, setStats] = useState({
-    draft: 0,
-    submitted: 0,
-    inReview: 0,
-    approved: 0,
-    rejected: 0,
-  });
 
-  const { data: applications, isLoading, error } = useQuery({
+  const { data: applications, isLoading } = useQuery({
     queryKey: ['applications'],
-    queryFn: getUserApplications,
+    queryFn: () => api.applications.list(),
   });
 
-  useEffect(() => {
-    if (applications) {
-      const newStats = applications.reduce(
-        (acc, app) => {
-          acc[app.status.toLowerCase()]++;
-          return acc;
-        },
-        { draft: 0, submitted: 0, inReview: 0, approved: 0, rejected: 0 }
-      );
-      setStats(newStats);
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'approved':
+        return 'bg-green-100 text-green-800';
+      case 'rejected':
+        return 'bg-red-100 text-red-800';
+      case 'waitlisted':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'under_review':
+        return 'bg-blue-100 text-blue-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
     }
-  }, [applications]);
-
-  const handleNewApplication = () => {
-    navigate('/applications/new');
   };
-
-  if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <Skeleton className="h-10 w-60" />
-          <Skeleton className="h-10 w-40" />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
-          <Skeleton className="h-64 w-full rounded-lg" />
-          <Skeleton className="h-64 w-full rounded-lg" />
-          <Skeleton className="h-64 w-full rounded-lg" />
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="bg-red-50 border border-red-200 rounded-md p-4 text-red-800">
-        <p>{t('error.loadingApplications')}</p>
-        <p className="text-sm mt-2">{(error as Error).message}</p>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">{t('dashboard.welcome')}</h1>
-        <Button onClick={handleNewApplication}>
-          {t('dashboard.newApplication')}
-        </Button>
+        <h2 className="text-2xl font-semibold text-gray-900">
+          {t('dashboard.title')}
+        </h2>
+        <Link
+          to="/applications/new"
+          className="flex items-center px-4 py-2 text-sm font-medium text-white bg-primary rounded-md hover:bg-primary/90"
+        >
+          <Plus className="w-5 h-5 mr-2" />
+          {t('dashboard.startApplication')}
+        </Link>
       </div>
 
-      {applications && applications.length === 0 ? (
-        <div className="bg-white rounded-lg shadow-sm p-8 text-center">
-          <h2 className="text-xl font-medium mb-2">{t('dashboard.noApplications')}</h2>
-          <p className="text-gray-600 mb-6">{t('dashboard.startApplication')}</p>
-          <Button onClick={handleNewApplication}>
-            {t('dashboard.newApplication')}
-          </Button>
+      {applications?.length === 0 ? (
+        <div className="text-center py-12">
+          <FileText className="mx-auto h-12 w-12 text-gray-400" />
+          <h3 className="mt-2 text-sm font-medium text-gray-900">
+            {t('dashboard.noApplications')}
+          </h3>
+          <p className="mt-1 text-sm text-gray-500">
+            {t('dashboard.startNow')}
+          </p>
+          <div className="mt-6">
+            <Link
+              to="/applications/new"
+              className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-primary rounded-md hover:bg-primary/90"
+            >
+              <Plus className="w-5 h-5 mr-2" />
+              {t('dashboard.startApplication')}
+            </Link>
+          </div>
         </div>
       ) : (
-        <>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2">
-              <div className="bg-white rounded-lg shadow-sm p-6">
-                <h2 className="text-lg font-medium mb-4">{t('dashboard.status')}</h2>
-                <StatusChart stats={stats} />
-              </div>
-            </div>
-
-            <div>
-              <div className="bg-white rounded-lg shadow-sm p-6">
-                <h2 className="text-lg font-medium mb-4">{t('dashboard.recentActivity')}</h2>
-                <RecentActivity applications={applications || []} />
-              </div>
-            </div>
+        <div className="bg-white shadow-md rounded-lg overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {t('application.applicationNumber')}
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {t('application.program')}
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {t('common.status')}
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {t('application.submissionDate')}
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {t('common.actions')}
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {applications?.map((application: any) => (
+                  <tr key={application.id}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {application.applicationNumber}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {application.program}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span
+                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(
+                          application.status
+                        )}`}
+                      >
+                        {t(`dashboard.${application.status}`)}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {application.submittedAt
+                        ? new Date(application.submittedAt).toLocaleDateString()
+                        : '-'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <Link
+                        to={`/applications/${application.id}`}
+                        className="text-primary hover:text-primary/80"
+                      >
+                        {application.status === 'draft'
+                          ? t('dashboard.continueApplication')
+                          : t('common.view')}
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-
-          <div>
-            <h2 className="text-lg font-medium mb-4">{t('dashboard.yourApplications')}</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {applications?.map((application: Application) => (
-                <ApplicationCard 
-                  key={application.id} 
-                  application={application} 
-                />
-              ))}
-            </div>
-          </div>
-        </>
+        </div>
       )}
     </div>
   );

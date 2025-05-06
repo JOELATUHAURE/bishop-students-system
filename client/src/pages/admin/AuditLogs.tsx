@@ -1,271 +1,111 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
-import { format } from 'date-fns';
-import { 
-  Search,
-  User,
-  Calendar,
-  Clock,
-  Download,
-  Filter
-} from 'lucide-react';
-
-// Services
-import { getAuditLogs } from '../../services/api';
-
-// Components
-import LoadingScreen from '../../components/ui/LoadingScreen';
-
-// Types
-type AuditLog = {
-  id: string;
-  userId: string;
-  userName: string;
-  action: string;
-  resourceType: string;
-  resourceId: string;
-  details: string;
-  ipAddress: string;
-  userAgent: string;
-  timestamp: string;
-};
+import { Search, Filter, Clock } from 'lucide-react';
+import api from '../../services/api';
 
 const AuditLogs = () => {
   const { t } = useTranslation();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [actionTypeFilter, setActionTypeFilter] = useState<string>('all');
-  const [resourceTypeFilter, setResourceTypeFilter] = useState<string>('all');
-  const [dateRange, setDateRange] = useState({
-    startDate: '',
-    endDate: ''
+  const [filters, setFilters] = useState({
+    action: '',
+    resourceType: '',
+    userId: '',
   });
 
-  // Fetch audit logs
-  const { data: auditLogs, isLoading, error } = useQuery({
-    queryKey: ['auditLogs'],
-    queryFn: () => getAuditLogs(),
+  const { data: logs, isLoading } = useQuery({
+    queryKey: ['auditLogs', filters],
+    queryFn: () => api.admin.getAuditLogs(filters),
   });
 
-  // Filter audit logs
-  const filteredLogs = auditLogs
-    ? auditLogs.filter((log: AuditLog) => {
-        const matchesSearch = 
-          log.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          log.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          log.resourceType.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          log.resourceId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          log.details.toLowerCase().includes(searchTerm.toLowerCase());
-        
-        const matchesActionType = actionTypeFilter === 'all' || log.action === actionTypeFilter;
-        const matchesResourceType = resourceTypeFilter === 'all' || log.resourceType === resourceTypeFilter;
-        
-        const logDate = new Date(log.timestamp);
-        const matchesDateRange = 
-          (!dateRange.startDate || logDate >= new Date(dateRange.startDate)) &&
-          (!dateRange.endDate || logDate <= new Date(dateRange.endDate + 'T23:59:59'));
-        
-        return matchesSearch && matchesActionType && matchesResourceType && matchesDateRange;
-      })
-    : [];
-
-  // Export to CSV
-  const exportToCsv = () => {
-    if (!filteredLogs.length) return;
-    
-    const headers = ['ID', 'User', 'Action', 'Resource Type', 'Resource ID', 'Details', 'IP Address', 'Timestamp'];
-    const csvContent = [
-      headers.join(','),
-      ...filteredLogs.map((log: AuditLog) => [
-        log.id,
-        `"${log.userName}"`,
-        log.action,
-        log.resourceType,
-        log.resourceId,
-        `"${log.details.replace(/"/g, '""')}"`,
-        log.ipAddress,
-        format(new Date(log.timestamp), 'yyyy-MM-dd HH:mm:ss')
-      ].join(','))
-    ].join('\n');
-    
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `audit-logs-${format(new Date(), 'yyyy-MM-dd')}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const handleFilterChange = (key: string, value: string) => {
+    setFilters(prev => ({ ...prev, [key]: value }));
   };
 
-  // Get unique action types and resource types for filters
-  const actionTypes = auditLogs 
-    ? ['all', ...new Set(auditLogs.map((log: AuditLog) => log.action))]
-    : ['all'];
-  
-  const resourceTypes = auditLogs
-    ? ['all', ...new Set(auditLogs.map((log: AuditLog) => log.resourceType))]
-    : ['all'];
-
-  if (isLoading) return <LoadingScreen />;
-  
-  if (error) return <div className="p-4 text-red-500">{t('errors.auditLogs.load')}</div>;
-
   return (
-    <div className="p-4 space-y-6">
+    <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">{t('admin.auditLogs.title')}</h1>
-        <button
-          onClick={exportToCsv}
-          disabled={!filteredLogs.length}
-          className="flex items-center px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-blue-300"
-        >
-          <Download className="h-4 w-4 mr-2" />
-          {t('admin.auditLogs.export')}
-        </button>
+        <h2 className="text-2xl font-semibold text-gray-900">
+          {t('admin.auditLogs')}
+        </h2>
       </div>
 
-      <div className="bg-white shadow rounded-lg p-4">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-            <input
-              type="text"
-              placeholder={t('admin.auditLogs.search')}
-              className="w-full pl-10 pr-4 py-2 border rounded-md"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          
-          <div>
+      <div className="bg-white shadow-md rounded-lg">
+        <div className="p-6 border-b border-gray-200">
+          <div className="flex flex-col md:flex-row gap-4">
             <select
-              className="w-full border rounded-md px-3 py-2"
-              value={actionTypeFilter}
-              onChange={(e) => setActionTypeFilter(e.target.value)}
+              value={filters.action}
+              onChange={(e) => handleFilterChange('action', e.target.value)}
+              className="form-select"
             >
-              <option value="all">{t('admin.auditLogs.allActions')}</option>
-              {actionTypes.filter(type => type !== 'all').map(type => (
-                <option key={type} value={type}>{type}</option>
-              ))}
+              <option value="">{t('admin.filterBy')} {t('admin.auditLogAction')}</option>
+              <option value="CREATE">Create</option>
+              <option value="UPDATE">Update</option>
+              <option value="DELETE">Delete</option>
+              <option value="LOGIN">Login</option>
+              <option value="LOGOUT">Logout</option>
             </select>
-          </div>
-          
-          <div>
+
             <select
-              className="w-full border rounded-md px-3 py-2"
-              value={resourceTypeFilter}
-              onChange={(e) => setResourceTypeFilter(e.target.value)}
+              value={filters.resourceType}
+              onChange={(e) => handleFilterChange('resourceType', e.target.value)}
+              className="form-select"
             >
-              <option value="all">{t('admin.auditLogs.allResources')}</option>
-              {resourceTypes.filter(type => type !== 'all').map(type => (
-                <option key={type} value={type}>{type}</option>
-              ))}
+              <option value="">{t('admin.filterBy')} {t('admin.auditLogResource')}</option>
+              <option value="Application">Application</option>
+              <option value="User">User</option>
+              <option value="Document">Document</option>
             </select>
-          </div>
-          
-          <div className="flex space-x-2">
-            <div className="flex-1">
-              <input
-                type="date"
-                className="w-full border rounded-md px-3 py-2"
-                value={dateRange.startDate}
-                onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
-              />
-            </div>
-            <div className="flex-1">
-              <input
-                type="date"
-                className="w-full border rounded-md px-3 py-2"
-                value={dateRange.endDate}
-                onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
-              />
-            </div>
           </div>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="min-w-full bg-white">
+          <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('admin.auditLogs.user')}
+                  {t('admin.auditLogTimestamp')}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('admin.auditLogs.action')}
+                  {t('admin.auditLogUser')}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('admin.auditLogs.resource')}
+                  {t('admin.auditLogAction')}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('admin.auditLogs.timestamp')}
+                  {t('admin.auditLogResource')}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('admin.auditLogs.ipAddress')}
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('admin.auditLogs.details')}
+                  {t('admin.auditLogDetails')}
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200">
-              {filteredLogs.length > 0 ? (
-                filteredLogs.map((log: AuditLog) => (
-                  <tr key={log.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <User className="h-4 w-4 mr-2 text-gray-500" />
-                        <span className="text-sm font-medium">{log.userName}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full
-                        ${log.action.toLowerCase().includes('create') ? 'bg-green-100 text-green-800' : ''}
-                        ${log.action.toLowerCase().includes('update') ? 'bg-blue-100 text-blue-800' : ''}
-                        ${log.action.toLowerCase().includes('delete') ? 'bg-red-100 text-red-800' : ''}
-                        ${log.action.toLowerCase().includes('login') ? 'bg-purple-100 text-purple-800' : ''}
-                        ${log.action.toLowerCase().includes('view') ? 'bg-gray-100 text-gray-800' : ''}
-                        ${!log.action.toLowerCase().match(/(create|update|delete|login|view)/) ? 'bg-yellow-100 text-yellow-800' : ''}
-                      `}>
-                        {log.action}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm">
-                        <div className="font-medium">{log.resourceType}</div>
-                        <div className="text-xs text-gray-500">{log.resourceId}</div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm">
-                        <div className="flex items-center">
-                          <Calendar className="h-4 w-4 mr-1 text-gray-500" />
-                          {format(new Date(log.timestamp), 'yyyy-MM-dd')}
-                        </div>
-                        <div className="flex items-center text-xs text-gray-500">
-                          <Clock className="h-3 w-3 mr-1" />
-                          {format(new Date(log.timestamp), 'HH:mm:ss')}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      {log.ipAddress}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-500">
-                      <div className="max-w-md truncate">
-                        {log.details}
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
-                    {t('admin.auditLogs.noResults')}
+            <tbody className="bg-white divide-y divide-gray-200">
+              {logs?.map((log: any) => (
+                <tr key={log.id}>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {new Date(log.createdAt).toLocaleString()}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {log.user?.firstName} {log.user?.lastName}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full
+                      ${log.action.startsWith('CREATE') ? 'bg-green-100 text-green-800' :
+                        log.action.startsWith('UPDATE') ? 'bg-blue-100 text-blue-800' :
+                        log.action.startsWith('DELETE') ? 'bg-red-100 text-red-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                      {log.action}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {log.resourceType}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-500">
+                    {log.description}
                   </td>
                 </tr>
-              )}
+              ))}
             </tbody>
           </table>
         </div>

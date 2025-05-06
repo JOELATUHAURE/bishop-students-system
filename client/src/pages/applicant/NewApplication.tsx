@@ -2,160 +2,158 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMutation } from '@tanstack/react-query';
-import { createApplication } from '../../services/api';
-import { useToast } from '../../hooks/useToast';
-
-// Components
-import Button from '../../components/ui/Button';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
-import { RadioGroup, RadioGroupItem } from '../../components/ui/RadioGroup';
-import { Label } from '../../components/ui/Label';
-
-type ProgramType = 'undergraduate' | 'graduate' | 'phd';
-
-const programs = {
-  undergraduate: [
-    'Bachelor of Science in Computer Science',
-    'Bachelor of Business Administration',
-    'Bachelor of Arts in Education',
-    'Bachelor of Science in Nursing',
-    'Bachelor of Science in Agriculture',
-  ],
-  graduate: [
-    'Master of Business Administration',
-    'Master of Education',
-    'Master of Science in Information Technology',
-    'Master of Arts in Counseling Psychology',
-    'Master of Public Health',
-  ],
-  phd: [
-    'PhD in Computer Science',
-    'PhD in Business Administration',
-    'PhD in Education',
-    'PhD in Public Health',
-  ],
-};
+import { School, Building2, Calendar, Loader2 } from 'lucide-react';
+import api from '../../services/api';
+import { useToast } from '../../components/ui/Toaster';
 
 const NewApplication = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { toast } = useToast();
-  
-  const [selectedType, setSelectedType] = useState<ProgramType>('undergraduate');
-  const [selectedProgram, setSelectedProgram] = useState<string>('');
+  const { showToast } = useToast();
+  const [formData, setFormData] = useState({
+    program: '',
+    department: '',
+    academicYear: '',
+    semester: '',
+  });
 
   const createMutation = useMutation({
-    mutationFn: createApplication,
+    mutationFn: (data: typeof formData) => api.applications.create(data),
     onSuccess: (data) => {
-      toast({
-        title: t('application.created'),
-        description: t('application.continueForm'),
-      });
+      showToast(t('Application created successfully'), 'success');
       navigate(`/applications/${data.id}/form`);
     },
-    onError: (error) => {
-      toast({
-        title: t('error.title'),
-        description: t('error.createApplication'),
-        variant: 'destructive',
-      });
+    onError: () => {
+      showToast(t('errors.generic'), 'error');
     },
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!selectedProgram) {
-      toast({
-        title: t('error.title'),
-        description: t('error.selectProgram'),
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    createMutation.mutate({
-      program: selectedProgram,
-      programType: selectedType,
-      status: 'draft',
-    });
+    await createMutation.mutateAsync(formData);
   };
 
   return (
-    <div className="max-w-3xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6">{t('application.startNew')}</h1>
-      
-      <form onSubmit={handleSubmit} className="space-y-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('application.selectProgramType')}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <RadioGroup
-              value={selectedType}
-              onValueChange={(value) => {
-                setSelectedType(value as ProgramType);
-                setSelectedProgram('');
-              }}
-              className="grid grid-cols-1 md:grid-cols-3 gap-4"
-            >
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="undergraduate" id="undergraduate" />
-                <Label htmlFor="undergraduate" className="cursor-pointer">
-                  {t('application.undergraduate')}
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="graduate" id="graduate" />
-                <Label htmlFor="graduate" className="cursor-pointer">
-                  {t('application.graduate')}
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="phd" id="phd" />
-                <Label htmlFor="phd" className="cursor-pointer">
-                  {t('application.phd')}
-                </Label>
-              </div>
-            </RadioGroup>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('application.selectProgram')}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <RadioGroup
-              value={selectedProgram}
-              onValueChange={setSelectedProgram}
-              className="grid grid-cols-1 gap-3"
-            >
-              {programs[selectedType].map((program) => (
-                <div 
-                  key={program} 
-                  className="flex items-center space-x-2 p-3 rounded-md border border-gray-200 hover:bg-gray-50"
-                >
-                  <RadioGroupItem value={program} id={program} />
-                  <Label htmlFor={program} className="cursor-pointer w-full">
-                    {program}
-                  </Label>
-                </div>
-              ))}
-            </RadioGroup>
-          </CardContent>
-        </Card>
-
-        <div className="flex justify-end">
-          <Button 
-            type="submit" 
-            disabled={createMutation.isPending || !selectedProgram}
-            className="w-full md:w-auto"
-          >
-            {createMutation.isPending ? t('common.loading') : t('application.continue')}
-          </Button>
+    <div className="max-w-2xl mx-auto">
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-semibold text-gray-900">
+            {t('application.newApplication')}
+          </h2>
+          <p className="mt-1 text-sm text-gray-600">
+            {t('Please fill in the basic information to start your application')}
+          </p>
         </div>
-      </form>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="bg-white shadow-md rounded-lg p-6">
+            <div className="space-y-4">
+              <div>
+                <label
+                  htmlFor="program"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  {t('application.program')} *
+                </label>
+                <div className="mt-1 relative">
+                  <School className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                  <input
+                    type="text"
+                    id="program"
+                    value={formData.program}
+                    onChange={(e) =>
+                      setFormData({ ...formData, program: e.target.value })
+                    }
+                    className="form-input pl-10"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="department"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  {t('application.department')} *
+                </label>
+                <div className="mt-1 relative">
+                  <Building2 className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                  <input
+                    type="text"
+                    id="department"
+                    value={formData.department}
+                    onChange={(e) =>
+                      setFormData({ ...formData, department: e.target.value })
+                    }
+                    className="form-input pl-10"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="academicYear"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  {t('application.academicYear')} *
+                </label>
+                <div className="mt-1 relative">
+                  <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                  <input
+                    type="text"
+                    id="academicYear"
+                    value={formData.academicYear}
+                    onChange={(e) =>
+                      setFormData({ ...formData, academicYear: e.target.value })
+                    }
+                    className="form-input pl-10"
+                    required
+                    placeholder="2024/2025"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="semester"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  {t('application.semester')} *
+                </label>
+                <select
+                  id="semester"
+                  value={formData.semester}
+                  onChange={(e) =>
+                    setFormData({ ...formData, semester: e.target.value })
+                  }
+                  className="form-select"
+                  required
+                >
+                  <option value="">{t('common.select')}</option>
+                  <option value="1">Semester 1</option>
+                  <option value="2">Semester 2</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end">
+            <button
+              type="submit"
+              disabled={createMutation.isPending}
+              className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 disabled:opacity-50"
+            >
+              {createMutation.isPending ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                t('common.continue')
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 };
