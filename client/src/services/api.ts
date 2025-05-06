@@ -1,121 +1,118 @@
-// src/services/api.ts
-import { supabase } from '../lib/supabase';
+import axios from 'axios';
+import { createClient } from '@supabase/supabase-js';
 
-const api = {
-  auth: {
-    signUp: async (data: { email: string; password: string; name?: string }) => {
-      const { data: user, error } = await supabase.auth.signUp({
-        email: data.email,
-        password: data.password,
-        options: { data: { name: data.name } }
-      });
-      if (error) throw error;
-      return user;
-    },
+// Create Supabase client
+const supabase = createClient(
+  'https://iwdrodqpyisgvdtzgeml.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml3ZHJvZHFweWlzZ3ZkdHpnZW1sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTA0ODg0MDAsImV4cCI6MjAyNjA2NDQwMH0.qgkN_0vO8-_OxsW9YwJnXluiYk3C6I0HHzQkjqVVHvM'
+);
 
-    signIn: async (data: { email: string; password: string }) => {
-      const { data: session, error } = await supabase.auth.signInWithPassword(data);
-      if (error) throw error;
-      localStorage.setItem('auth_token', session.session.access_token);
-      localStorage.setItem('auth_user', JSON.stringify(session.user));
-      return session;
-    },
-
-    signOut: async () => {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      localStorage.removeItem('auth_token');
-      localStorage.removeItem('auth_user');
-    },
-
-    getUser: async () => {
-      const { data: { user }, error } = await supabase.auth.getUser();
-      if (error) throw error;
-      return user;
-    }
+// Create an axios instance with default config
+const instance = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || 'https://iwdrodqpyisgvdtzgeml.supabase.co/rest/v1',
+  headers: {
+    'Content-Type': 'application/json',
   },
+});
 
-  applications: {
-    list: async () => {
-      const { data, error } = await supabase
-        .from('applications')
-        .select('*')
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      return data;
-    },
-
-    get: async (id: string | number) => {
-      const { data, error } = await supabase
-        .from('applications')
-        .select('*, education_records(*), documents(*)')
-        .eq('id', id)
-        .single();
-      if (error) throw error;
-      return data;
-    },
-
-    create: async (data: any) => {
-      const { data: newApplication, error } = await supabase
-        .from('applications')
-        .insert([data])
-        .select()
-        .single();
-      if (error) throw error;
-      return newApplication;
-    },
-
-    update: async (id: string | number, data: any) => {
-      const { data: updated, error } = await supabase
-        .from('applications')
-        .update(data)
-        .eq('id', id)
-        .select()
-        .single();
-      if (error) throw error;
-      return updated;
-    },
-
-    delete: async (id: string | number) => {
-      const { error } = await supabase
-        .from('applications')
-        .delete()
-        .eq('id', id);
-      if (error) throw error;
+// Add request interceptor to include auth token from localStorage
+instance.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
+    return config;
   },
+  (error) => Promise.reject(error)
+);
 
-  documents: {
-    upload: async (applicationId: string, file: File) => {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}.${fileExt}`;
-      const filePath = `${applicationId}/${fileName}`;
+// API service for applications
+const applications = {
+  list: async () => {
+    const { data, error } = await supabase
+      .from('applications')
+      .select('*')
+      .order('created_at', { ascending: false });
 
-      const { error: uploadError } = await supabase.storage
-        .from('documents')
-        .upload(filePath, file);
-      if (uploadError) throw uploadError;
+    if (error) throw error;
+    return data;
+  },
+  
+  get: async (id: number) => {
+    const { data, error } = await supabase
+      .from('applications')
+      .select('*')
+      .eq('id', id)
+      .single();
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('documents')
-        .getPublicUrl(filePath);
+    if (error) throw error;
+    return data;
+  },
+  
+  create: async (data: any) => {
+    const { data: newApplication, error } = await supabase
+      .from('applications')
+      .insert([data])
+      .select()
+      .single();
 
-      const { data: document, error } = await supabase
-        .from('documents')
-        .insert({
-          application_id: applicationId,
-          name: file.name,
-          file_path: filePath,
-          file_size: file.size,
-          mime_type: file.type
-        })
-        .select()
-        .single();
-      if (error) throw error;
+    if (error) throw error;
+    return newApplication;
+  },
+  
+  update: async (id: number, data: any) => {
+    const { data: updatedApplication, error } = await supabase
+      .from('applications')
+      .update(data)
+      .eq('id', id)
+      .select()
+      .single();
 
-      return { ...document, url: publicUrl };
-    }
+    if (error) throw error;
+    return updatedApplication;
   }
+};
+
+// API service for user authentication
+const auth = {
+  login: async (credentials: { email: string; password: string }) => {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: credentials.email,
+      password: credentials.password,
+    });
+
+    if (error) throw error;
+    return data;
+  },
+  
+  register: async (userData: { email: string; password: string; name: string }) => {
+    const { data, error } = await supabase.auth.signUp({
+      email: userData.email,
+      password: userData.password,
+      options: {
+        data: {
+          name: userData.name,
+        },
+      },
+    });
+
+    if (error) throw error;
+    return data;
+  },
+  
+  logout: async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('auth_user');
+  }
+};
+
+// Export the API services
+const api = {
+  applications,
+  auth,
 };
 
 export default api;
