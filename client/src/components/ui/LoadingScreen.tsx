@@ -1,4 +1,4 @@
-import { CircleNotch } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 
@@ -17,7 +17,7 @@ const LoadingScreen: React.FC = () => {
           animate={{ rotate: 360 }}
           transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
         >
-          <CircleNotch className="h-12 w-12 text-primary" />
+          <Loader2 className="h-12 w-12 text-primary" />
         </motion.div>
         <h2 className="text-xl font-semibold text-foreground">
           {t('common.loading')}
