@@ -3,7 +3,6 @@ import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 import path from 'path';
 
-// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
     react(),
@@ -44,35 +43,7 @@ export default defineConfig({
               cacheName: 'google-fonts-cache',
               expiration: {
                 maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365, // <== 365 days
-              },
-              cacheableResponse: {
-                statuses: [0, 200],
-              },
-            },
-          },
-          {
-            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'gstatic-fonts-cache',
-              expiration: {
-                maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365, // <== 365 days
-              },
-              cacheableResponse: {
-                statuses: [0, 200],
-              },
-            },
-          },
-          {
-            urlPattern: /^https:\/\/api\.mapbox\.com\/.*/i,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'mapbox-cache',
-              expiration: {
-                maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24, // <== 1 day
+                maxAgeSeconds: 60 * 60 * 24 * 365, // 365 days
               },
               cacheableResponse: {
                 statuses: [0, 200],
@@ -81,9 +52,7 @@ export default defineConfig({
           },
         ],
       },
-      strategies: 'injectManifest',
-      srcDir: 'client/src', // Update this to point to the correct source folder
-      filename: 'sw.js',     // Keep the service worker filename
+      strategies: 'generateSW', // Use generateSW instead of injectManifest
       injectRegister: 'auto',
       devOptions: {
         enabled: true,
