@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { FileText, Plus } from 'lucide-react';
 import api from '../../services/api';
+import LoadingScreen from '../../components/LoadingScreen'; // ✅ Adjust the path based on your structure
 
 const Dashboard = () => {
   const { t } = useTranslation();
@@ -13,16 +14,12 @@ const Dashboard = () => {
     queryFn: () => api.applications.list(),
   });
 
-  // Check if the query is still loading
+  // ✅ Use your animated LoadingScreen component
   if (isLoading) {
-    return (
-      <div className="flex justify-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
-  // Check if there was an error during fetching
+  // Handle errors
   if (isError) {
     return (
       <div className="text-center py-12">
