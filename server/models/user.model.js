@@ -1,87 +1,94 @@
-module.exports = (sequelize, DataTypes) => {
-  const User = sequelize.define('User', {
+module.exports = (sequelize, Sequelize) => {
+  const User = sequelize.define('user', {
     id: {
-      type: DataTypes.UUID,
-      defaultValue: DataTypes.UUIDV4,
-      primaryKey: true,
-    },
-    firstName: {
-      type: DataTypes.STRING,
-      allowNull: false,
-    },
-    lastName: {
-      type: DataTypes.STRING,
-      allowNull: false,
+      type: Sequelize.UUID,
+      defaultValue: Sequelize.UUIDV4,
+      primaryKey: true
     },
     email: {
-      type: DataTypes.STRING,
+      type: Sequelize.STRING,
       allowNull: false,
       unique: true,
       validate: {
-        isEmail: true,
-      },
+        isEmail: true
+      }
     },
     password: {
-      type: DataTypes.STRING,
-      allowNull: false,
+      type: Sequelize.STRING,
+      allowNull: false
+    },
+    firstName: {
+      type: Sequelize.STRING,
+      allowNull: false
+    },
+    lastName: {
+      type: Sequelize.STRING,
+      allowNull: false
+    },
+    status: {
+      type: Sequelize.ENUM('active', 'inactive', 'suspended'),
+      defaultValue: 'active'
+    },
+    lastLogin: {
+      type: Sequelize.DATE
     },
     phone: {
-      type: DataTypes.STRING,
+      type: Sequelize.STRING,
       validate: {
         is: /^\+\d{10,15}$/,
       },
     },
     gender: {
-      type: DataTypes.ENUM('male', 'female', 'other', 'prefer not to say'),
+      type: Sequelize.ENUM('male', 'female', 'other', 'prefer not to say'),
     },
     dateOfBirth: {
-      type: DataTypes.DATEONLY,
+      type: Sequelize.DATEONLY,
     },
     nationality: {
-      type: DataTypes.STRING,
+      type: Sequelize.STRING,
     },
     settlementSite: {
-      type: DataTypes.ENUM('Rwamwanja', 'Kyangwali', 'Nakivale', 'Other', 'None'),
+      type: Sequelize.ENUM('Rwamwanja', 'Kyangwali', 'Nakivale', 'Other', 'None'),
       defaultValue: 'None',
     },
     refugeeId: {
-      type: DataTypes.STRING,
+      type: Sequelize.STRING,
     },
     address: {
-      type: DataTypes.STRING,
+      type: Sequelize.STRING,
     },
     city: {
-      type: DataTypes.STRING,
+      type: Sequelize.STRING,
     },
     state: {
-      type: DataTypes.STRING,
+      type: Sequelize.STRING,
     },
     country: {
-      type: DataTypes.STRING,
+      type: Sequelize.STRING,
     },
     postalCode: {
-      type: DataTypes.STRING,
+      type: Sequelize.STRING,
     },
     isActive: {
-      type: DataTypes.BOOLEAN,
+      type: Sequelize.BOOLEAN,
       defaultValue: true,
     },
     isVerified: {
-      type: DataTypes.BOOLEAN,
+      type: Sequelize.BOOLEAN,
       defaultValue: false,
     },
     preferredLanguage: {
-      type: DataTypes.ENUM('english', 'swahili', 'french', 'arabic', 'runyankole'),
+      type: Sequelize.ENUM('english', 'swahili', 'french', 'arabic', 'runyankole'),
       defaultValue: 'english',
     },
     resetPasswordToken: {
-      type: DataTypes.STRING,
+      type: Sequelize.STRING,
     },
     resetPasswordExpire: {
-      type: DataTypes.DATE,
+      type: Sequelize.DATE,
     },
     lastLoginAt: {
-      type: DataTypes.DATE,
+      type: Sequelize.DATE,
     },
   }, {
     timestamps: true,

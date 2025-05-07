@@ -13,18 +13,33 @@ const instance = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 10000,
 });
 
 // Add request interceptor to include auth token from localStorage
 instance.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('auth_token');
+    const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
   (error) => Promise.reject(error)
+);
+
+// Add response interceptor for better error handling
+instance.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    console.error('API Error:', {
+      url: error.config?.url,
+      method: error.config?.method,
+      status: error.response?.status,
+      message: error.message,
+    });
+    return Promise.reject(error);
+  }
 );
 
 // API service for applications
@@ -77,40 +92,91 @@ const applications = {
 // API service for user authentication
 const auth = {
   login: async (credentials: { email: string; password: string }) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: credentials.email,
-      password: credentials.password,
-    });
+    try {
+      console.log('Attempting login with email:', credentials.email);
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: credentials.email,
+        password: credentials.password,
+      });
 
-    if (error) throw error;
-    return data;
+      if (error) {
+        console.error('Login error:', error);
+        throw error;
+      }
+
+      console.log('Login successful:', { user: data.user?.id });
+      return data;
+    } catch (error) {
+      console.error('Login failed:', error);
+      throw error;
+    }
   },
   
   register: async (userData: { email: string; password: string; name: string }) => {
-    const { data, error } = await supabase.auth.signUp({
-      email: userData.email,
-      password: userData.password,
-      options: {
-        data: {
-          name: userData.name,
+    try {
+      console.log('Attempting registration for:', userData.email);
+      const { data, error } = await supabase.auth.signUp({
+        email: userData.email,
+        password: userData.password,
+        options: {
+          data: {
+            name: userData.name,
+          },
         },
-      },
-    });
+      });
 
-    if (error) throw error;
-    return data;
+      if (error) {
+        console.error('Registration error:', error);
+        throw error;
+      }
+
+      console.log('Registration successful:', { user: data.user?.id });
+      return data;
+    } catch (error) {
+      console.error('Registration failed:', error);
+      throw error;
+    }
   },
   
   logout: async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('auth_user');
+    try {
+      console.log('Attempting logout');
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('Logout error:', error);
+        throw error;
+      }
+      localStorage.removeItem('token');
+      console.log('Logout successful');
+    } catch (error) {
+      console.error('Logout failed:', error);
+      throw error;
+    }
+  },
+
+  // Add method to check auth status
+  checkAuth: async () => {
+    try {
+      console.log('Checking auth status');
+      const { data: { session }, error } = await supabase.auth.getSession();
+      
+      if (error) {
+        console.error('Auth check error:', error);
+        throw error;
+      }
+
+      console.log('Auth check result:', { hasSession: !!session });
+      return session;
+    } catch (error) {
+      console.error('Auth check failed:', error);
+      throw error;
+    }
   }
 };
 
 // Export the API services
 const api = {
+  instance,
   applications,
   auth,
 };

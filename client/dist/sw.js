@@ -1,1 +1,140 @@
-if(!self.define){let e,t={};const s=(s,n)=>(s=new URL(s+".js",n).href,t[s]||new Promise((t=>{if("document"in self){const e=document.createElement("script");e.src=s,e.onload=t,document.head.appendChild(e)}else e=s,importScripts(s),t()})).then((()=>{let e=t[s];if(!e)throw new Error(`Module ${s} didn’t register its module`);return e})));self.define=(n,o)=>{const c=e||("document"in self?document.currentScript.src:"")||location.href;if(t[c])return;let i={};const a=e=>s(e,c),m={module:{uri:c},exports:i,require:a};t[c]=Promise.all(n.map((e=>m[e]||a(e)))).then((e=>(o(...e),i)))}}define(["./workbox-40c80ae4"],(function(e){"use strict";self.skipWaiting(),e.clientsClaim(),e.precacheAndRoute([{url:"manifest.webmanifest",revision:"475c9ac9da1f3cbad4f683d22584438e"}],{}),e.cleanupOutdatedCaches(),e.registerRoute(new e.NavigationRoute(e.createHandlerBoundToURL("index.html"))),e.registerRoute(/^https:\/\/fonts\.googleapis\.com\/.*/i,new e.CacheFirst({cacheName:"google-fonts-cache",plugins:[new e.ExpirationPlugin({maxEntries:10,maxAgeSeconds:31536e3}),new e.CacheableResponsePlugin({statuses:[0,200]})]}),"GET"),e.registerRoute(/^https:\/\/fonts\.gstatic\.com\/.*/i,new e.CacheFirst({cacheName:"gstatic-fonts-cache",plugins:[new e.ExpirationPlugin({maxEntries:10,maxAgeSeconds:31536e3}),new e.CacheableResponsePlugin({statuses:[0,200]})]}),"GET"),e.registerRoute(/^https:\/\/api\.mapbox\.com\/.*/i,new e.NetworkFirst({cacheName:"mapbox-cache",plugins:[new e.ExpirationPlugin({maxEntries:10,maxAgeSeconds:86400}),new e.CacheableResponsePlugin({statuses:[0,200]})]}),"GET")}));
+// This is a simple service worker for offline support
+
+const CACHE_NAME = 'bsu-application-cache-v1';
+const urlsToCache = [
+  '/',
+  '/index.html',
+  '/offline.html',
+];
+
+// Install service worker
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then((cache) => {
+        return cache.addAll(urlsToCache);
+      })
+  );
+});
+
+// Activate service worker
+self.addEventListener('activate', (event) => {
+  const cacheWhitelist = [CACHE_NAME];
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cacheName) => {
+          if (cacheWhitelist.indexOf(cacheName) === -1) {
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    })
+  );
+});
+
+// Fetch event
+self.addEventListener('fetch', (event) => {
+  event.respondWith(
+    caches.match(event.request)
+      .then((response) => {
+        // Cache hit - return response
+        if (response) {
+          return response;
+        }
+        
+        return fetch(event.request).then(
+          (response) => {
+            // Check if we received a valid response
+            if (!response || response.status !== 200 || response.type !== 'basic') {
+              return response;
+            }
+            
+            // Clone the response
+            const responseToCache = response.clone();
+            
+            caches.open(CACHE_NAME)
+              .then((cache) => {
+                // Don't cache API responses
+                if (!event.request.url.includes('/api/')) {
+                  cache.put(event.request, responseToCache);
+                }
+              });
+              
+            return response;
+          }
+        ).catch(() => {
+          // If the request fails, e.g. when offline
+          if (event.request.mode === 'navigate') {
+            return caches.match('/offline.html');
+          }
+        });
+      })
+  );
+});
+
+// Background sync for offline form submissions
+self.addEventListener('sync', (event) => {
+  if (event.tag === 'sync-application-forms') {
+    event.waitUntil(syncApplicationForms());
+  }
+});
+
+// Function to sync stored form data when online
+async function syncApplicationForms() {
+  try {
+    // Open the IndexedDB database
+    const db = await openDB('offline-forms-db', 1);
+    
+    // Get all stored forms
+    const tx = db.transaction('forms', 'readwrite');
+    const store = tx.objectStore('forms');
+    const storedForms = await store.getAll();
+    
+    // Process each form
+    for (const form of storedForms) {
+      try {
+        // Attempt to submit the form
+        const response = await fetch(form.url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${form.token}`,
+          },
+          body: JSON.stringify(form.data),
+        });
+        
+        if (response.ok) {
+          // If successful, delete from store
+          await store.delete(form.id);
+        }
+      } catch (error) {
+        console.error('Failed to sync form:', error);
+      }
+    }
+    
+    await tx.complete;
+  } catch (error) {
+    console.error('Error syncing forms:', error);
+  }
+}
+
+// Helper function to open IndexedDB
+function openDB(name, version) {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(name, version);
+    
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result;
+      db.createObjectStore('forms', { keyPath: 'id' });
+    };
+    
+    request.onsuccess = (event) => {
+      resolve(event.target.result);
+    };
+    
+    request.onerror = (event) => {
+      reject(event.target.error);
+    };
+  });
+}

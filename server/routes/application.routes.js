@@ -3,6 +3,7 @@ const { body } = require('express-validator');
 const applicationController = require('../controllers/application.controller');
 const { protect } = require('../middlewares/auth');
 const { validateRequest } = require('../middlewares/validate');
+const { Application } = require('../models');
 
 const router = express.Router();
 
@@ -81,5 +82,71 @@ router.post(
 
 // Delete application
 router.delete('/:id', applicationController.deleteApplication);
+
+// Get all applications
+router.get('/all', async (req, res) => {
+  try {
+    const applications = await Application.findAll();
+    res.json(applications);
+  } catch (error) {
+    console.error('Error fetching applications:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get single application
+router.get('/:id', async (req, res) => {
+  try {
+    const application = await Application.findByPk(req.params.id);
+    if (!application) {
+      return res.status(404).json({ message: 'Application not found' });
+    }
+    res.json(application);
+  } catch (error) {
+    console.error('Error fetching application:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Create application
+router.post('/', async (req, res) => {
+  try {
+    const application = await Application.create(req.body);
+    res.status(201).json(application);
+  } catch (error) {
+    console.error('Error creating application:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Update application
+router.put('/:id', async (req, res) => {
+  try {
+    const application = await Application.findByPk(req.params.id);
+    if (!application) {
+      return res.status(404).json({ message: 'Application not found' });
+    }
+    await application.update(req.body);
+    res.json(application);
+  } catch (error) {
+    console.error('Error updating application:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Delete application
+router.delete('/:id', async (req, res) => {
+  try {
+    const application = await Application.findByPk(req.params.id);
+    if (!application) {
+      return res.status(404).json({ message: 'Application not found' });
+    }
+    await application.destroy();
+    res.json({ message: 'Application deleted' });
+  } catch (error) {
+    console.error('Error deleting application:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
 
 module.exports = router;
