@@ -1,18 +1,17 @@
 // client/src/layouts/AdminLayout.tsx
-import React from 'react';
+import { Outlet } from 'react-router-dom';
+import Header from '../components/layout/Header';
 
 interface AdminLayoutProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
 }
 
-const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
+const AdminLayout: React.FC<AdminLayoutProps> = () => {
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col">
-      <header className="bg-blue-800 text-white p-4 shadow">
-        <h1 className="text-xl font-bold">Admin Dashboard</h1>
-      </header>
-      <main className="flex-1 p-6">
-        {children}
+    <div className="min-h-screen bg-background">
+      <Header />
+      <main className="container mx-auto px-4 py-8">
+        <Outlet />
       </main>
     </div>
   );
