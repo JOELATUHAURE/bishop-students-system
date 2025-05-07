@@ -14,4 +14,4 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     storageKey: 'bsu-refugee-system-auth',
     storage: window.localStorage,
   },
-}) 
+})
