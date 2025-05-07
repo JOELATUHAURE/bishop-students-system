@@ -59,7 +59,7 @@
 
 @layer base {
   * {
-    @apply border; /* Replaced border-border with a valid border class */
+    @apply border-border;
   }
   
   body {
